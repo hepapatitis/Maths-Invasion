@@ -13,14 +13,6 @@ physics.start(); physics.pause()
 
 --------------------------------------------
 
--- create buttons
-local function createButton( num, x, y )
-	local b = display.newImageRect( "button-"..num..".png", 50, 65 )
-	b.x, b.y = x, y
-	
-	return b
-end
-
 -- forward declarations and other locals
 local screenW, screenH, halfW = display.contentWidth, display.contentHeight, display.contentWidth*0.5
 
@@ -58,16 +50,45 @@ function scene:create( event )
 	local grassShape = { -halfW,-34, halfW,-34, halfW,34, -halfW,34 }
 	physics.addBody( grass, "static", { friction=0.3, shape=grassShape } )
 	
-	local button_1 = createButton( 1, 5, 82 )
-	local button_2 = createButton( 2, 55, 82 )
-	local button_3 = createButton( 3, 105, 82 )
-	local button_4 = createButton( 4, 155, 82 )
-	local button_5 = createButton( 5, 205, 82 )
-	local button_6 = createButton( 6, 255, 82 )
-	local button_7 = createButton( 7, 305, 82 )
-	local button_8 = createButton( 8, 355, 82 )
-	local button_9 = createButton( 9, 405, 82 )
-	local button_0 = createButton( 0, 455, 82 )
+	-- create number input display
+	local user_input = display.newText( "Hello World!", 160, 240, "Arial", 30 )
+	
+	-- create buttons
+	local function createButton( num, x, y )
+		local b = display.newImageRect( "button-"..num..".png", 25, 32 )
+		b.x, b.y = x, y
+		b.num = num
+		
+		return b
+	end
+	
+	local function btn_listener(event)
+		print(event.name.." occured by" .. event.target.num)
+		user_input.text = user_input.text .. event.target.num;
+		return true
+	end
+
+	local button_1 = createButton( 1, 15, 352 )
+	local button_2 = createButton( 2, 40, 352 )
+	local button_3 = createButton( 3, 65, 352 )
+	local button_4 = createButton( 4, 90, 352 )
+	local button_5 = createButton( 5, 115, 352 )
+	local button_6 = createButton( 6, 140, 352 )
+	local button_7 = createButton( 7, 165, 352 )
+	local button_8 = createButton( 8, 190, 352 )
+	local button_9 = createButton( 9, 215, 352 )
+	local button_0 = createButton( 0, 240, 352 )
+	
+	button_1:addEventListener("tap", btn_listener)
+	button_2:addEventListener("tap", btn_listener)
+	button_3:addEventListener("tap", btn_listener)
+	button_4:addEventListener("tap", btn_listener)
+	button_5:addEventListener("tap", btn_listener)
+	button_6:addEventListener("tap", btn_listener)
+	button_7:addEventListener("tap", btn_listener)
+	button_8:addEventListener("tap", btn_listener)
+	button_9:addEventListener("tap", btn_listener)
+	button_0:addEventListener("tap", btn_listener)
 	
 	keyboardGroup:insert( button_1 )
 	keyboardGroup:insert( button_2 )
@@ -84,6 +105,7 @@ function scene:create( event )
 	sceneGroup:insert( background )
 	sceneGroup:insert( grass)
 	sceneGroup:insert( crate )
+	sceneGroup:insert( user_input )
 end
 
 
