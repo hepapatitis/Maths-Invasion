@@ -15,7 +15,10 @@ physics.start(); physics.pause()
 
 -- forward declarations and other locals
 local screenW, screenH, halfW = display.contentWidth, display.contentHeight, display.contentWidth*0.5
-
+local questionTable = {}
+local score = 0;
+local max_level = 4;
+	
 function scene:create( event )
 
 	-- Called when the scene's view does not exist.
@@ -38,7 +41,7 @@ function scene:create( event )
 	crate.rotation = 15
 	
 	-- add physics to the crate
-	physics.addBody( crate, { density=1.0, friction=0.3, bounce=0.3 } )
+	physics.addBody( crate, { density=1.0, friction=0.1, bounce=0.3 } )
 	
 	-- create a grass object and add physics (with custom shape)
 	local grass = display.newImageRect( "grass.png", screenW, 82 )
@@ -52,6 +55,7 @@ function scene:create( event )
 	
 	-- create number input display
 	local user_input = display.newText( "Hello World!", 160, 240, "Arial", 30 )
+	local score_text = display.newText( "0", 160, 500, "Arial", 30 )
 	
 	-- create buttons
 	local function createButton( num, x, y )
@@ -62,9 +66,42 @@ function scene:create( event )
 		return b
 	end
 	
+	local function createRemoveButton( x, y )
+		local b = display.newImageRect( "button-x.png", 25, 32 )
+		b.x, b.y = x, y
+		
+		return b
+	end
+	
+	local function createEnterButton( x, y )
+		local b = display.newImageRect( "button-enter.png", 125, 32 )
+		b.x, b.y = x, y
+		
+		return b
+	end
+	
 	local function btn_listener(event)
 		print(event.name.." occured by" .. event.target.num)
 		user_input.text = user_input.text .. event.target.num;
+		return true
+	end
+	
+	local function btn_x_listener(event)
+		user_input.text = "";
+		return true
+	end
+	
+	local function btn_enter_listener(event)
+		-- Check Answer
+		for key,value in pairs(questionTable) do
+			if questionTable[key].answer == tonumber(user_input.text) then
+				questionTable[key]:removeSelf()
+				table.remove(questionTable, key)
+				score = score + 3;
+				score_text.text = score;
+			end
+		end
+		user_input.text = "";
 		return true
 	end
 
@@ -78,6 +115,8 @@ function scene:create( event )
 	local button_8 = createButton( 8, 190, 352 )
 	local button_9 = createButton( 9, 215, 352 )
 	local button_0 = createButton( 0, 240, 352 )
+	local button_x = createRemoveButton( 265, 352 )
+	local button_enter = createEnterButton( 100, 390 )
 	
 	button_1:addEventListener("tap", btn_listener)
 	button_2:addEventListener("tap", btn_listener)
@@ -89,6 +128,8 @@ function scene:create( event )
 	button_8:addEventListener("tap", btn_listener)
 	button_9:addEventListener("tap", btn_listener)
 	button_0:addEventListener("tap", btn_listener)
+	button_x:addEventListener("tap", btn_x_listener)
+	button_enter:addEventListener("tap", btn_enter_listener)
 	
 	keyboardGroup:insert( button_1 )
 	keyboardGroup:insert( button_2 )
@@ -106,6 +147,7 @@ function scene:create( event )
 	sceneGroup:insert( grass)
 	sceneGroup:insert( crate )
 	sceneGroup:insert( user_input )
+	sceneGroup:insert( score_text )
 end
 
 
@@ -121,6 +163,43 @@ function scene:show( event )
 		-- INSERT code here to make the scene come alive
 		-- e.g. start timers, begin animation, play audio, etc.
 		physics.start()
+		
+		-- Let the game begin
+		local function spawnQuestion()
+			local level = math.random(max_level)
+			local a = math.random(10)
+			local b = math.random(10)
+			local question = display.newText( "", 160, 40, "Arial", 30 )
+			question.x = 100 + math.random(200)
+			question.y = 40 + math.random(300)
+			
+			if level == 0 then
+				question.answer = a+b
+				question.text = a .. "+" .. b
+			elseif level == 1 then
+				if a < b then
+					question.answer = b-a
+					question.text = b .. "-" .. a
+				else
+					question.answer = a-b
+					question.text = a .. "-" .. b
+				end
+			elseif level == 2 then
+				question.answer = a*b
+				question.text = a .. "*" .. b
+			else
+				question.answer = b
+				question.text = (a*b) .. "/" .. a
+			end
+			
+			
+			table.insert(questionTable, question)
+		end
+		
+		
+		
+		-- Timer Startooo
+		timer.performWithDelay(2000, spawnQuestion, 0)
 	end
 end
 
