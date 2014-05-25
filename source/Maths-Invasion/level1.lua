@@ -6,18 +6,19 @@
 
 local composer = require( "composer" )
 local scene = composer.newScene()
-
--- include Corona's "physics" library
-local physics = require "physics"
-physics.start(); physics.pause()
+local spawnQuestion -- Reference for the timer
 
 --------------------------------------------
 
 -- forward declarations and other locals
 local screenW, screenH, halfW = display.contentWidth, display.contentHeight, display.contentWidth*0.5
 local questionTable = {}
+local question_indicator = {}
 local score = 0;
 local max_level = 4;
+local button_width = 50;
+local button_height = 64;
+local button_margin = 10;
 	
 function scene:create( event )
 
@@ -28,6 +29,7 @@ function scene:create( event )
 
 	local sceneGroup = self.view
 	local keyboardGroup = display.newGroup()
+	local questionGroup = display.newGroup()
 
 	-- create a grey rectangle as the backdrop
 	local background = display.newRect( 0, 0, screenW, screenH )
@@ -35,31 +37,13 @@ function scene:create( event )
 	background.anchorY = 0
 	background:setFillColor( .5 )
 	
-	-- make a crate (off-screen), position it, and rotate slightly
-	local crate = display.newImageRect( "crate.png", 90, 90 )
-	crate.x, crate.y = 160, -100
-	crate.rotation = 15
-	
-	-- add physics to the crate
-	physics.addBody( crate, { density=1.0, friction=0.1, bounce=0.3 } )
-	
-	-- create a grass object and add physics (with custom shape)
-	local grass = display.newImageRect( "grass.png", screenW, 82 )
-	grass.anchorX = 0
-	grass.anchorY = 1
-	grass.x, grass.y = 0, display.contentHeight
-	
-	-- define a shape that's slightly shorter than image bounds (set draw mode to "hybrid" or "debug" to see)
-	local grassShape = { -halfW,-34, halfW,-34, halfW,34, -halfW,34 }
-	physics.addBody( grass, "static", { friction=0.3, shape=grassShape } )
-	
 	-- create number input display
-	local user_input = display.newText( "Hello World!", 160, 240, "Arial", 30 )
+	local user_input = display.newText( "", halfW, 70, "Arial", 30 )
 	local score_text = display.newText( "0", 160, 500, "Arial", 30 )
 	
 	-- create buttons
 	local function createButton( num, x, y )
-		local b = display.newImageRect( "button-"..num..".png", 25, 32 )
+		local b = display.newImageRect( "button-"..num..".png", button_width, button_height )
 		b.x, b.y = x, y
 		b.num = num
 		
@@ -102,21 +86,32 @@ function scene:create( event )
 			end
 		end
 		user_input.text = "";
+		refresh_question_indicator()
 		return true
 	end
 
-	local button_1 = createButton( 1, 15, 352 )
-	local button_2 = createButton( 2, 40, 352 )
-	local button_3 = createButton( 3, 65, 352 )
-	local button_4 = createButton( 4, 90, 352 )
-	local button_5 = createButton( 5, 115, 352 )
-	local button_6 = createButton( 6, 140, 352 )
-	local button_7 = createButton( 7, 165, 352 )
-	local button_8 = createButton( 8, 190, 352 )
-	local button_9 = createButton( 9, 215, 352 )
-	local button_0 = createButton( 0, 240, 352 )
+	local centre_x = screenW * 0.5;
+	local centre_y = screenH * 0.5;
+
+	local button_1 = createButton( 1, centre_x - button_margin - button_width, centre_y + button_margin + button_height )
+	local button_2 = createButton( 2, centre_x                               , centre_y + button_margin + button_height )
+	local button_3 = createButton( 3, centre_x + button_margin + button_width, centre_y + button_margin + button_height )
+	local button_4 = createButton( 4, centre_x - button_margin - button_width, centre_y )
+	local button_5 = createButton( 5, centre_x                               , centre_y )
+	local button_6 = createButton( 6, centre_x + button_margin + button_width, centre_y )
+	local button_7 = createButton( 7, centre_x - button_margin - button_width, centre_y - button_margin - button_height )
+	local button_8 = createButton( 8, centre_x                               , centre_y - button_margin - button_height )
+	local button_9 = createButton( 9, centre_x + button_margin + button_width, centre_y - button_margin - button_height )
+	local button_0 = createButton( 0, centre_x - button_margin - button_width, centre_y + ( button_margin + button_height ) * 2 )
 	local button_x = createRemoveButton( 265, 352 )
-	local button_enter = createEnterButton( 100, 390 )
+	local button_enter = createEnterButton( halfW, 450 )
+	
+	-- Create Question Indicator
+	for i = 1, 10, 1 do
+		question_indicator[i] = display.newRoundedRect( 20, (((i-1)*40) + (i*5)), 35, 40, 5 )
+		question_indicator[i]:setFillColor( 1 )
+		questionGroup:insert(question_indicator[i])
+	end
 	
 	button_1:addEventListener("tap", btn_listener)
 	button_2:addEventListener("tap", btn_listener)
@@ -144,8 +139,6 @@ function scene:create( event )
 	
 	-- all display objects must be inserted into group
 	sceneGroup:insert( background )
-	sceneGroup:insert( grass)
-	sceneGroup:insert( crate )
 	sceneGroup:insert( user_input )
 	sceneGroup:insert( score_text )
 end
@@ -162,10 +155,9 @@ function scene:show( event )
 		-- 
 		-- INSERT code here to make the scene come alive
 		-- e.g. start timers, begin animation, play audio, etc.
-		physics.start()
 		
 		-- Let the game begin
-		local function spawnQuestion()
+		spawnQuestion = function()
 			local level = math.random(max_level)
 			local a = math.random(10)
 			local b = math.random(10)
@@ -192,14 +184,15 @@ function scene:show( event )
 				question.text = (a*b) .. "/" .. a
 			end
 			
-			
 			table.insert(questionTable, question)
+			
+			refresh_question_indicator();
 		end
 		
 		
 		
 		-- Timer Startooo
-		timer.performWithDelay(2000, spawnQuestion, 0)
+		timer.performWithDelay(5000, spawnQuestion, 0)
 	end
 end
 
@@ -213,7 +206,7 @@ function scene:hide( event )
 		--
 		-- INSERT code here to pause the scene
 		-- e.g. stop timers, stop animation, unload sounds, etc.)
-		physics.stop()
+		timer.cancel(spawnQuestion)
 	elseif phase == "did" then
 		-- Called when the scene is now off screen
 	end	
@@ -230,6 +223,17 @@ function scene:destroy( event )
 	
 	package.loaded[physics] = nil
 	physics = nil
+end
+
+function refresh_question_indicator()
+	local total_question = #questionTable;
+	for i = 1, 10, 1 do
+		if i <= total_question then
+			question_indicator[i]:setFillColor( 0 )
+		else
+			question_indicator[i]:setFillColor( 1 )
+		end
+	end
 end
 
 ---------------------------------------------------------------------------------
